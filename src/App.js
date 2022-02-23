@@ -9,20 +9,21 @@ const Store = createContext(initialState)
 const Form = () => {
   const formRef = useRef(null);
   const {dispatch} = useContext(Store);
-  const [state,setState] = useState({});
+  const [state,setState] = useState();
 
   const onAdd = (event) => {
     event.preventDefault();
 
     const request = {
       name: state.name,
-      description: state.description,
       id: null,
       isComplete: false,
     };
 
-    fetch(HOST_API + '/todo', {
-      method: 'POST',
+    console.log(request)
+
+    fetch(HOST_API + "/todo", {
+      method: "POST",
       body: JSON.stringify(request),
       headers: {
         'Content-Type': 'application/json'
@@ -30,15 +31,16 @@ const Form = () => {
     })
       .then((response) => response.json())
       .then((todo) => {
-        dispatch({ type: 'add-item', item: todo });
-        setState({ name: '', description: "" });
+        dispatch({ type: "add-item", item: todo });
+        setState({ name: "" });
         formRef.current.reset();
       });
   };
 
+  
   return (
     <form ref={formRef}>
-      <input type='text' name='name'
+      <input type="text" name="name"
         onChange={(event) =>
           setState({ ...state, name: event.target.value })}
       />
@@ -50,7 +52,7 @@ const Form = () => {
 
 const List = () => {
 
-  const {dispatch, state} = useContext(Store);
+  const {state, dispatch} = useContext(Store);
 
   useEffect(() => {
     fetch(HOST_API+"/todos")
@@ -97,19 +99,21 @@ function reducer(state, action) { //da una entrada y siempre va a recibir la mis
 
 const StoreProvider = ({ children }) => {
 
-  const { dispatch, state } = useReducer(reducer, initialState); 
+  const [state,dispatch]  = useReducer(reducer, initialState); 
 
-  return <Store.Provider value={{state,dispatch}}>
+  return (<Store.Provider value={{state,dispatch}}>
     {children}
-  </Store.Provider>
+  </Store.Provider>);
 }
 
 
 function App() {
-  return <StoreProvider>
+  return (<StoreProvider>
     <Form />
     <List/>
   </StoreProvider>
+  
+  );
     
   
 }
