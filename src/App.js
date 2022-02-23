@@ -1,10 +1,64 @@
-import React,{useContext} from 'react';
+import React, {createContext,useContext,useReducer,useEffect,useRef,useState} from 'react';
 
 const HOST_API = "http://localhost:8080/api"
+const initialState = {
+  list: []
+};
+const Store = createContext(initialState)
+
+const Form = () => {
+  const formRef = useRef(null);
+  const {dispatch} = useContext(Store);
+  const [state,setState] = useState({});
+
+  const onAdd = (event) => {
+    event.preventDefault();
+
+    const request = {
+      name: state.name,
+      description: state.description,
+      id: null,
+      isComplete: false,
+    };
+
+    fetch(HOST_API + '/todo', {
+      method: 'POST',
+      body: JSON.stringify(request),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+      .then((response) => response.json())
+      .then((todo) => {
+        dispatch({ type: 'add-item', item: todo });
+        setState({ name: '', description: "" });
+        formRef.current.reset();
+      });
+  };
+
+  return (
+    <form ref={formRef}>
+      <input type='text' name='name'
+        onChange={(event) =>
+          setState({ ...state, name: event.target.value })}
+      />
+      <button onClick={onAdd}>Agregar</button>
+    </form>
+  );
+
+}
 
 const List = () => {
 
-  const { dispat,state} = useContext(Store)
+  const {dispatch, state} = useContext(Store);
+
+  useEffect(() => {
+    fetch(HOST_API+"/todos")
+    .then(response => response.json())
+    .then((list) => {
+      dispatch({type: "update-list", list})
+    })
+  }, [state.list.length,dispatch]);
 
   return <div>
     <table>
@@ -21,32 +75,43 @@ const List = () => {
             <td>{todo.id}</td>
             <td>{todo.name}</td>
             <td>{todo.isComplete}</td>
-            </tr>
+          </tr>
         })}
       </tbody>
     </table>
   </div>
 }
 
+function reducer(state, action) { //da una entrada y siempre va a recibir la misma salida de dicha entrada
+  switch (action.type) {
+    case 'update-list':
+      return { ...state, list: action.list }
+    case 'add-item':
+      const newList = state.list;
+      newList.push(action.item);
+      return { ...state, list: newList }
+    default:
+      return state;
+  }
+}
+
+const StoreProvider = ({ children }) => {
+
+  const { dispatch, state } = useReducer(reducer, initialState); 
+
+  return <Store.Provider value={{state,dispatch}}>
+    {children}
+  </Store.Provider>
+}
+
+
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  return <StoreProvider>
+    <Form />
+    <List/>
+  </StoreProvider>
+    
+  
 }
 
 export default App;
